@@ -1,0 +1,134 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id              String            @id @default(uuid())
+  email           String            @unique
+  password        String
+  name            String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  savedColleges   SavedCollege[]
+  savedComparisons SavedComparison[]
+  questions       Question[]
+  answers         Answer[]
+  reviews         Review[]
+}
+
+model College {
+  id            String         @id @default(uuid())
+  name          String         @unique
+  location      String
+  fees          Float          // Annual fee in INR
+  rating        Float          @default(0.0)
+  image         String         // Path or URL to image
+  overview      String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  courses       Course[]
+  placements    Placement[]
+  reviews       Review[]
+  cutoffRanks   CutoffRank[]
+  savedByUsers  SavedCollege[]
+  questions     Question[]
+}
+
+model Course {
+  id            String   @id @default(uuid())
+  collegeId     String
+  college       College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  name          String   // B.Tech CSE, MBA, etc.
+  durationYears Int
+  fees          Float    // Annual course fee in INR
+  seats         Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Placement {
+  id                  String   @id @default(uuid())
+  collegeId           String
+  college             College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  year                Int
+  highestPackage      Float    // in LPA
+  averagePackage      Float    // in LPA
+  medianPackage       Float    // in LPA
+  placementPercentage Float
+  recruiters          String   // JSON string of recruiters list
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  collegeId String
+  college   College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Float    // 1.0 - 5.0
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CutoffRank {
+  id        String   @id @default(uuid())
+  collegeId String
+  college   College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  exam      String   // JEE Main, GATE, CAT, NEET, etc.
+  branch    String   // Computer Science, Mechanical, etc.
+  rank      Int      // Closing rank
+  category  String   // General, OBC, SC, ST, etc.
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Question {
+  id        String   @id @default(uuid())
+  collegeId String?
+  college   College? @relation(fields: [collegeId], references: [id], onDelete: SetNull)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  answers   Answer[]
+}
+
+model Answer {
+  id         String   @id @default(uuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model SavedCollege {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collegeId String
+  college   College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  savedAt   DateTime @default(now())
+
+  @@unique([userId, collegeId])
+}
+
+model SavedComparison {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collegeIds String   // JSON string of college IDs
+  name       String   // Name given to comparison
+  savedAt    DateTime @default(now())
+}
